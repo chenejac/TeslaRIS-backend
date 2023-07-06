@@ -27,10 +27,10 @@ public class LanguageTagServiceTest {
     public void shouldReturnLanguageTagWhenItExists() {
         // given
         var expected = new LanguageTag();
-        when(languageTagRepository.findById(1)).thenReturn(Optional.of(expected));
+        when(languageTagRepository.findByIdAndDeletedIsFalse(1)).thenReturn(Optional.of(expected));
 
         // when
-        var result = languageTagService.findLanguageTagById(1);
+        var result = languageTagService.findOne(1);
 
         // then
         assertEquals(expected, result);
@@ -39,11 +39,11 @@ public class LanguageTagServiceTest {
     @Test
     public void shouldThrowNotFoundExceptionWhenLanguageTagDoesNotExist() {
         // given
-        when(languageTagRepository.findById(1)).thenReturn(Optional.empty());
+        when(languageTagRepository.findByIdAndDeletedIsFalse(1)).thenReturn(Optional.empty());
 
         // when
         assertThrows(NotFoundException.class,
-            () -> languageTagService.findLanguageTagById(1));
+            () -> languageTagService.findOne(1));
 
         // then (NotFoundException should be thrown)
     }

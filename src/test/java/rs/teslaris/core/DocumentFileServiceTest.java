@@ -49,10 +49,10 @@ public class DocumentFileServiceTest {
         // given
         var documentFile = new DocumentFile();
 
-        when(documentFileRepository.findById(1)).thenReturn(Optional.of(documentFile));
+        when(documentFileRepository.findByIdAndDeletedIsFalse(1)).thenReturn(Optional.of(documentFile));
 
         // when
-        var actual = documentFileService.findDocumentFileById(1);
+        var actual = documentFileService.findOne(1);
 
         // then
         assertEquals(documentFile, actual);
@@ -61,16 +61,16 @@ public class DocumentFileServiceTest {
     @Test
     public void shouldThrowExceptionWhenInvalidIdIsProvided() {
         // given
-        when(documentFileRepository.findById(1)).thenReturn(Optional.empty());
+        when(documentFileRepository.findByIdAndDeletedIsFalse(1)).thenReturn(Optional.empty());
 
         // when
-        assertThrows(NotFoundException.class, () -> documentFileService.findDocumentFileById(1));
+        assertThrows(NotFoundException.class, () -> documentFileService.findOne(1));
 
         // then (NotFoundException should be thrown)
     }
 
     @Test
-    public void shouldSaveNewDocumentWhenValidDataIsProvided() throws IOException {
+    public void shouldSaveNewDocumentWhenValidDataIsProvided() {
         // given
         var dto = new DocumentFileDTO();
         var doc = new DocumentFile();
@@ -89,7 +89,7 @@ public class DocumentFileServiceTest {
     }
 
     @Test
-    public void shouldEditDocumentWhenValidDataIsProvided() throws IOException {
+    public void shouldEditDocumentWhenValidDataIsProvided() {
         // given
         var doc = new DocumentFile();
         doc.setFilename("filename.txt");
@@ -99,7 +99,7 @@ public class DocumentFileServiceTest {
             new MockMultipartFile("name", "name.bin", "application/octet-stream", (byte[]) null));
         var docIndex = new DocumentFileIndex();
 
-        when(documentFileRepository.findById(dto.getId())).thenReturn(Optional.of(doc));
+        when(documentFileRepository.findByIdAndDeletedIsFalse(dto.getId())).thenReturn(Optional.of(doc));
         when(fileService.store(any(), eq("UUID"))).thenReturn("UUID.pdf");
         when(documentFileIndexRepository.findDocumentFileIndexByDatabaseId(any())).thenReturn(
             Optional.of(docIndex));
@@ -112,7 +112,7 @@ public class DocumentFileServiceTest {
     }
 
     @Test
-    public void shouldDeleteDocumentWhenValidDataIsProvided() throws IOException {
+    public void shouldDeleteDocumentWhenValidDataIsProvided() {
         // given
         var doc = new DocumentFile();
         doc.setFilename("filename.txt");
@@ -120,14 +120,15 @@ public class DocumentFileServiceTest {
         dto.setFile(
             new MockMultipartFile("name", "name.bin", "application/octet-stream", (byte[]) null));
 
-        when(documentFileRepository.getReferenceByServerFilename("UUID")).thenReturn(doc);
+        when(documentFileRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(doc));
+        when(documentFileRepository.getReferenceByServerFilenameAndDeletedIsFalse("UUID")).thenReturn(doc);
         when(fileService.store(any(), eq("UUID"))).thenReturn("UUID.pdf");
 
         // when
         documentFileService.deleteDocumentFile("UUID");
 
         // then
-        verify(documentFileRepository, times(1)).delete(any());
+        verify(documentFileRepository, times(1)).save(any());
         verify(fileService, times(1)).delete(any());
     }
 
